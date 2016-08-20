@@ -1,0 +1,5 @@
+{
+    "next": "build",
+    "image": "turtle-demo",
+    "timeout": 30
+}

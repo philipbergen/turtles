@@ -1,0 +1,56 @@
+#!/usr/bin/env python
+"""
+Usage:
+    stager STAGE
+
+Options:
+    STAGE  The stage to execute. Supported stages:
+             build - Compile all python sources
+             test - Runs the test suite
+             crash - Crashes
+             fail - Doesn't end successfully
+             success - Ends successfully
+             loop - Succeeds and sets next stage to loop-1
+             loop-N - Succeeds and set next stage to loop-(N+1)
+"""
+import os
+import sys
+
+
+def main(args):
+    # print("STAGER:", args)
+    stage = args[0]
+    if stage == "build":
+        import shutil
+        import compileall
+        shutil.copy2('/input/trt', '/output/trt')
+        shutil.copytree('/input/turtles', '/output/turtles')
+        compileall.compile_dir('/output/turtles')
+        res = {'next': 'test', 'success': True}
+    elif stage == 'test':
+        import subprocess
+        subprocess.check_call('pip install nose'.split())
+        os.chdir('/output')
+        subprocess.check_output('nosetests -w /output --doctest-tests'.split())
+        res = {'success': True}
+    elif stage == 'loop':
+        res = {'next': 'loop-1', 'success': True}
+    elif stage.startswith('loop-'):
+        n = int(stage.split('-', 1)[-1])
+        res = {'next': 'loop-%d' % (n+1), 'success': True}
+    elif stage == 'crash':
+        raise Exception("Failed on purpose!")
+    elif stage == 'fail':
+        res = {'next': 'fail', 'success': False}
+    elif stage == 'success':
+        res = {'success': True}
+    else:
+        raise Exception("Unsupported stage: " + stage)
+
+    with open('/output/result.json', 'w') as fout:
+        import json
+        json.dump(res, fout)
+
+
+if __name__ == '__main__':
+    main(sys.argv[1:])

@@ -1,0 +1,58 @@
+#!/usr/bin/env python
+"""
+Usage:
+    trt INPUT_DIR [-s STAGE] [-o OUTPUT_DIR] [-i IMAGE]
+
+Options:
+    INPUT_DIR  The directory to use as input state
+               for the run. Usually the output from
+               a previous run, but can also be your
+               source code directory.
+
+    -s STAGE  Optionally specify the stage to run on the 
+              input. If not specified it will be derived
+              from <INPUT_DIR>/result.json
+
+    -o OUTPUT_DIR  Target directory for output from this
+                   stage. <STAGE>/ will always be post-
+                   fixed. If not specified will be
+                   computed as <INPUT_DIR>/../<STAGE>
+
+    -i IMAGE  Docker image URL. If not specified, the 
+              path from <INPUT_DIR>/result.json will be
+              used.
+"""
+
+
+def main(opts):
+    """ Acts on the options derived from the usage described in __doc__.
+    """
+    from turtles import TurtleNeck, stage, StageFailed, MaxRecursion, em
+
+    neck = TurtleNeck(opts['INPUT_DIR'], opts['-o'], opts['-i'], opts['-s'])
+    neck.ensure()
+    while neck:
+        try:
+            neck = stage(neck)
+        except StageFailed as e:
+            print(em("boom"), "Failed", e)
+            return False
+        if 'next' not in neck.result:
+            print(em('sparkles'), "Final stage completed")
+            break
+        if neck.recurse >= opts['MAX_RECURSE']:
+            print(em('boom'), "Maximum recursion reached:", neck.recurse)
+            raise MaxRecursion(neck)
+    return True
+
+def cli():
+    """ Wrapper for docopt parsing without dirtying the global namespace.
+    """
+    import docopt
+    opts = docopt.docopt(__doc__)
+    opts['MAX_RECURSE'] = 100
+    main(opts)
+
+
+if __name__ == '__main__':
+    cli()

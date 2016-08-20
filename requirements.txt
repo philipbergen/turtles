@@ -1,0 +1,6 @@
+docopt
+em-keyboard
+yapf
+ujson
+ipython
+attrs
