@@ -1,0 +1,4 @@
+docopt
+em-keyboard
+ujson
+attrs

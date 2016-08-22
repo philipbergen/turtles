@@ -17,23 +17,28 @@ Options:
               loop - Succeeds and sets next stage to loop-1
               loop-N - Succeeds and set next stage to loop-(N+1)
 """
+import os
 import sys
 
 
 def main(args):
     # print("STAGER:", args)
     indir, outdir, stage = args[:3]
+    samedir = os.stat(indir).st_ino == os.stat(outdir).st_ino
     if stage == "build":
         import shutil
         import compileall
-        shutil.copy2(indir + '/trtl', outdir + '/trtl')
-        shutil.copytree(indir + '/turtles', outdir + '/turtles')
+        if samedir:
+            print("Warning:", indir, 'and', outdir, 'is the same')
+        else:
+            shutil.copy2(indir + '/trtl', outdir + '/trtl')
+            shutil.copytree(indir + '/turtles', outdir + '/turtles')
         compileall.compile_dir(outdir + '/turtles')
         res = {'next': 'test', 'success': True}
     elif stage == 'test':
-        import os
         import subprocess
         subprocess.check_call('pip install nose'.split())
+        subprocess.check_call(('pip install -r ' + indir + '/turtles/requirements.txt').split())
         os.chdir(outdir + '')
         subprocess.check_output('nosetests -w /output --doctest-tests'.split())
         res = {'success': True}

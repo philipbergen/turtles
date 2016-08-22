@@ -1,5 +1,6 @@
 import os
 import attr
+import ujson
 
 
 def em(*names, cache={}):
@@ -23,6 +24,11 @@ class MaxRecursion(Exception):
     """
 
 
+class InvalidPreconditions(Exception):
+    """ Raised when the input settings are invalid.
+    """
+
+
 @attr.s(slots=True)
 class TurtleNeck(object):
     """ Holds all the stage parameters
@@ -36,7 +42,6 @@ class TurtleNeck(object):
 
     def ensure(self):
         if not self.result:
-            import ujson
             try:
                 with open(os.path.join(self.indir, 'result.json')) as fin:
                     self.result = ujson.load(fin)
@@ -55,7 +60,7 @@ class TurtleNeck(object):
     @property
     def output_dir(self):
         if self.outdir:
-            return os.path.join(os.path.abspath(self.outdir), self.stage)
+            return os.path.abspath(self.outdir)
         return os.path.abspath(os.path.join(self.input_dir, '..', self.stage))
 
     @property
@@ -72,11 +77,13 @@ def stage(neck):
         :param neck: TurtleNeck input for the stage.
         :return: New turtle neck if call successful, else raise CalledProcessError
     """
+    import time
     from subprocess import run, STDOUT
-    os.makedirs(neck.output_dir, exist_ok=False)
+    os.makedirs(neck.output_dir, exist_ok=True)
     cmd = ["docker", 'run', '--rm', '-v', neck.input_volume, '-v', neck.output_volume, neck.image, neck.stage]
     print(em('whale'), cmd)
-    with open(os.path.join(neck.output_dir, 'log.txt'), 'w') as fout:
+    with open(os.path.join(neck.output_dir, 'log.txt'), 'a') as fout:
+        fout.write('Log started: %d-%.2d-%.2d %.2d:%.2d:%.2d\n' % time.localtime()[:6])
         print(em('scroll'), "Output logged in", fout.name)
         try:
             run(cmd, stderr=STDOUT, stdout=fout, check=True, timeout=neck.result.get('timeout', 100))
@@ -93,5 +100,9 @@ def stage(neck):
     if not res.result.get('success', None):
         print(em('-1'), "Stage failed", neck)
         raise StageFailed(neck)
+    if 'image' not in res.result:
+        res.result['image'] = neck.result['image']
+        with open(os.path.join(neck.outdir, 'result.json'), 'w') as fout:
+            ujson.dump(res.result, fout)
     print(em('+1'), "Stage successful", neck)
     return res
