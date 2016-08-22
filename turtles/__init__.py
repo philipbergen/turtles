@@ -95,4 +95,3 @@ def stage(neck):
         raise StageFailed(neck)
     print(em('+1'), "Stage successful", neck)
     return res
-

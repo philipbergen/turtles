@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Usage:
-    trt INPUT_DIR [-s STAGE] [-o OUTPUT_DIR] [-i IMAGE]
+    trtl INPUT_DIR [-s STAGE] [-o OUTPUT_DIR] [-i IMAGE]
 
 Options:
     INPUT_DIR  The directory to use as input state
@@ -44,6 +44,7 @@ def main(opts):
             print(em('boom'), "Maximum recursion reached:", neck.recurse)
             raise MaxRecursion(neck)
     return True
+
 
 def cli():
     """ Wrapper for docopt parsing without dirtying the global namespace.
