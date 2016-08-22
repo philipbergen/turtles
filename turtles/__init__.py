@@ -37,10 +37,17 @@ class TurtleNeck(object):
     outdir = attr.ib(default=None)
     image = attr.ib(default=None)
     stage = attr.ib(default=None)
+    settings = attr.ib(default=attr.Factory(dict))
     result = attr.ib(default=attr.Factory(dict))
     recurse = attr.ib(default=0)
 
     def ensure(self):
+        if not self.settings:
+            try:
+                with open(os.path.join(self.indir, 'settings.json')) as fin:
+                    self.settings = ujson.load(fin)
+            except FileNotFoundError:
+                pass
         if not self.result:
             try:
                 with open(os.path.join(self.indir, 'result.json')) as fin:
@@ -48,10 +55,13 @@ class TurtleNeck(object):
             except FileNotFoundError:
                 pass
         if not self.stage:
-            self.stage = self.result.get('next', None)
-        self.image = self.result.get('image', self.image)
+            self.stage = self.settings.get('stage', None)
+        self.image = self.settings.get('image', self.image)
         print(em('point_right'), "Ensured", self)
         return self
+
+    def result_to_settings(self):
+        self.stage = self.result['stage']
 
     @property
     def input_dir(self):
@@ -86,7 +96,7 @@ def stage(neck):
         fout.write('Log started: %d-%.2d-%.2d %.2d:%.2d:%.2d\n' % time.localtime()[:6])
         print(em('scroll'), "Output logged in", fout.name)
         try:
-            run(cmd, stderr=STDOUT, stdout=fout, check=True, timeout=neck.result.get('timeout', 100))
+            run(cmd, stderr=STDOUT, stdout=fout, check=True, timeout=neck.settings.get('timeout', 100))
         except Exception as e:
             import traceback
             fout.write("EXCEPTION: ")
@@ -101,7 +111,7 @@ def stage(neck):
         print(em('-1'), "Stage failed", neck)
         raise StageFailed(neck)
     if 'image' not in res.result:
-        res.result['image'] = neck.result['image']
+        res.result['image'] = neck.settings['image']
         with open(os.path.join(neck.outdir, 'result.json'), 'w') as fout:
             ujson.dump(res.result, fout)
     print(em('+1'), "Stage successful", neck)

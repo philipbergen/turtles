@@ -31,12 +31,13 @@ def main(opts):
         except StageFailed as e:
             print(em("boom"), "Failed", e)
             return False
-        if 'next' not in neck.result:
+        if 'stage' not in neck.result:
             print(em('sparkles'), "Final stage completed")
             break
         if neck.recurse >= opts['MAX_RECURSE']:
             print(em('boom'), "Maximum recursion reached:", neck.recurse)
             raise MaxRecursion(neck)
+        neck.result_to_settings()
     return True
 
 
