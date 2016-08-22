@@ -4,22 +4,16 @@ Usage:
     trtl INPUT_DIR [-s STAGE] [-o OUTPUT_DIR] [-i IMAGE]
 
 Options:
-    INPUT_DIR  The directory to use as input state
-               for the run. Usually the output from
-               a previous run, but can also be your
-               source code directory.
+    INPUT_DIR  The directory to use as input state for the run. Usually the output from a previous
+               run, but can also be your source code directory.
 
-    -s STAGE  Optionally specify the stage to run on the 
-              input. If not specified it will be derived
+    -s STAGE  Optionally specify the stage to run on the input. If not specified it will be derived
               from <INPUT_DIR>/result.json
 
-    -o OUTPUT_DIR  Target directory for output from this
-                   stage. <STAGE>/ will always be post-
-                   fixed. If not specified will be
-                   computed as <INPUT_DIR>/../<STAGE>
+    -o OUTPUT_DIR  Target directory for output from this stage.
+                   If not specified will be computed as <INPUT_DIR>/../<STAGE>
 
-    -i IMAGE  Docker image URL. If not specified, the 
-              path from <INPUT_DIR>/result.json will be
+    -i IMAGE  Docker image URL. If not specified, the path from <INPUT_DIR>/result.json will be
               used.
 """
 
