@@ -3,3 +3,6 @@
 /.idea
 /log.txt
 /result.json
+/build/
+/dist/
+/turtles.egg-info/

@@ -32,14 +32,14 @@ def main(args):
         if samedir:
             print("Warning:", indir, 'and', outdir, 'is the same')
         else:
-            shutil.copy2(indir + '/trtl', outdir + '/trtl')
+            shutil.copy2(indir + '/trtl.py', outdir + '/trtl.py')
             shutil.copytree(indir + '/turtles', outdir + '/turtles')
         compileall.compile_dir(outdir + '/turtles')
         res = {'next_stage': 'test', 'success': True}
     elif stage == 'test':
         import subprocess
         subprocess.check_call('pip install nose'.split())
-        subprocess.check_call(('pip install -r ' + indir + '/turtles/requirements.txt').split())
+        subprocess.check_call(('pip install -r ' + indir + '/requirements.txt').split())
         os.chdir(outdir + '')
         subprocess.check_output('nosetests -w /output --doctest-tests'.split())
         res = {'success': True}

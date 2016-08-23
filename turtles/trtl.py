@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 """
 Usage:
     trtl INPUT [-s STAGE] [-o OUTPUT_DIR] [-i IMAGE]
@@ -17,13 +16,12 @@ Options:
     -i IMAGE  Docker image URL. If not specified, the path from <INPUT_DIR>/result.json will be
               used.
 """
-import os
 
 
 def main(opts):
     """ Acts on the options derived from the usage described in __doc__.
     """
-    from turtles import TurtleNeck, stage, StageFailed, MaxRecursion, em
+    from . import TurtleNeck, stage, StageFailed, MaxRecursion, em
 
     neck = TurtleNeck(opts['INPUT'], opts['-o'], opts['-i'], opts['-s'])
     neck.ensure()

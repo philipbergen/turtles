@@ -1,2 +1,4 @@
-yapf
-ipython
+docopt
+em-keyboard
+ujson
+attrs
