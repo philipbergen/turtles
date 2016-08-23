@@ -1,21 +1,23 @@
 #!/usr/bin/env python
 """
 Usage:
-    trtl INPUT_DIR [-s STAGE] [-o OUTPUT_DIR] [-i IMAGE]
+    trtl INPUT [-s STAGE] [-o OUTPUT_DIR] [-i IMAGE]
 
 Options:
-    INPUT_DIR  The directory to use as input state for the run. Usually the output from a previous
-               run, but can also be your source code directory.
+    INPUT  The directory or result.json/settings.json to use as input state for the run.
+           Usually the output from a previous run, but can also be your source code directory.
 
     -s STAGE  Optionally specify the stage to run on the input. If not specified it will be derived
-              from <INPUT_DIR>/result.json
+              from <INPUT_DIR>/settings.json
 
-    -o OUTPUT_DIR  Target directory for output from this stage.
-                   If not specified will be computed as <INPUT_DIR>/../<STAGE>
+    -o OUTPUT_DIR  Target directory base for output from this stage.
+                   If not specified <INPUT_DIR> will be used.
+                   Only if <OUTPUT_DIR> is set, the combined <OUTPUT_DIR>/<STAGE> will be used.
 
     -i IMAGE  Docker image URL. If not specified, the path from <INPUT_DIR>/result.json will be
               used.
 """
+import os
 
 
 def main(opts):
@@ -23,19 +25,19 @@ def main(opts):
     """
     from turtles import TurtleNeck, stage, StageFailed, MaxRecursion, em
 
-    neck = TurtleNeck(opts['INPUT_DIR'], opts['-o'], opts['-i'], opts['-s'])
+    neck = TurtleNeck(opts['INPUT'], opts['-o'], opts['-i'], opts['-s'])
     neck.ensure()
     while neck:
         try:
             neck = stage(neck)
         except StageFailed as e:
-            print(em("boom"), "Failed", e)
+            print(em('x', 'boom'), "Failed", e)
             return False
-        if 'stage' not in neck.result:
-            print(em('sparkles'), "Final stage completed")
+        if 'next_stage' not in neck.result:
+            print(em('ok', 'tada'), "Final stage completed")
             break
         if neck.recurse >= opts['MAX_RECURSE']:
-            print(em('boom'), "Maximum recursion reached:", neck.recurse)
+            print(em('x', 'boom'), "Maximum recursion reached:", neck.recurse)
             raise MaxRecursion(neck)
         neck.result_to_settings()
     return True

@@ -11,7 +11,7 @@ def em(*names, cache={}):
         import sys
         with open([p for p in sys.path[::-1] if p.endswith('/site-packages')][0] + '/em/emojis.json') as fin:
             cache.update(ujson.load(fin))
-    return ''.join([cache[name]['char'] for name in names])
+    return ' '.join([cache[name]['char'] for name in names])
 
 
 class StageFailed(Exception):
@@ -42,6 +42,12 @@ class TurtleNeck(object):
     recurse = attr.ib(default=0)
 
     def ensure(self):
+        if os.path.isfile(self.indir):
+            with open(self.indir) as fin:
+                self.settings = ujson.load(fin)
+                if 'stage' not in self.settings and 'next_stage' in self.settings:
+                    self.settings['stage'] = self.settings['next_stage']
+            self.indir = os.path.dirname(self.indir)
         if not self.settings:
             try:
                 with open(os.path.join(self.indir, 'settings.json')) as fin:
@@ -61,7 +67,7 @@ class TurtleNeck(object):
         return self
 
     def result_to_settings(self):
-        self.stage = self.result['stage']
+        self.stage = self.result['next_stage']
 
     @property
     def input_dir(self):
@@ -69,9 +75,9 @@ class TurtleNeck(object):
 
     @property
     def output_dir(self):
-        if self.outdir:
-            return os.path.abspath(self.outdir)
-        return os.path.abspath(os.path.join(self.input_dir, '..', self.stage))
+        if not self.outdir:
+            return self.input_dir
+        return os.path.join(os.path.abspath(self.outdir), self.stage)
 
     @property
     def input_volume(self):
@@ -89,6 +95,7 @@ def stage(neck):
     """
     import time
     from subprocess import run, STDOUT
+    print(em('cinema'), "Starting stage", neck.stage)
     os.makedirs(neck.output_dir, exist_ok=True)
     cmd = ["docker", 'run', '--rm', '-v', neck.input_volume, '-v', neck.output_volume, neck.image, neck.stage]
     print(em('whale'), cmd)
@@ -112,7 +119,7 @@ def stage(neck):
         raise StageFailed(neck)
     if 'image' not in res.result:
         res.result['image'] = neck.settings['image']
-        with open(os.path.join(neck.outdir, 'result.json'), 'w') as fout:
+        with open(os.path.join(neck.output_dir, 'result.json'), 'w') as fout:
             ujson.dump(res.result, fout)
-    print(em('+1'), "Stage successful", neck)
+    print(em('+1'), "Stage successful", neck.stage)
     return res
