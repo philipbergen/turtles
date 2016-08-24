@@ -39,12 +39,14 @@ Build the image and tag it usefully:
 ::
     docker build --tag my-maven-project .
 
+
 Create the ``stage`` script in your source folder, simplified:
 
 ::
 
     #!/bin/bash
     set -eu
+    # Determine what the next stage should be
     case "$1" in
     compile)
         next=test
@@ -61,7 +63,9 @@ Create the ``stage`` script in your source folder, simplified:
         ;;
     esac
     cd /input
+    # Do the actual work of the stage
     mvn "$1"
+    # Generate the result.json
     [ -n "$next" ] && next=", \"next_stage\":\"$next\""
     echo "{\"success\":true$next}" > /output/result.json
 
