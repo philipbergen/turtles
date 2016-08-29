@@ -6,3 +6,5 @@
 /build/
 /dist/
 /turtles.egg-info/
+*.pyo
+*.pyc

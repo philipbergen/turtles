@@ -32,10 +32,9 @@ def main(args):
         if samedir:
             print("Warning:", indir, 'and', outdir, 'is the same')
         else:
-            shutil.copy2(indir + '/trtl.py', outdir + '/trtl.py')
             shutil.copytree(indir + '/turtles', outdir + '/turtles')
         compileall.compile_dir(outdir + '/turtles')
-        res = {'next_stage': 'test', 'success': True}
+        res = {'-s': 'test'}
     elif stage == 'test':
         import subprocess
         subprocess.check_call('pip install nose'.split())
@@ -44,16 +43,16 @@ def main(args):
         subprocess.check_output('nosetests -w /output --doctest-tests'.split())
         res = {'success': True}
     elif stage == 'loop':
-        res = {'next_stage': 'loop-1', 'success': True}
+        res = {'-s': 'loop-1'}
     elif stage.startswith('loop-'):
         n = int(stage.split('-', 1)[-1])
-        res = {'next_stage': 'loop-%d' % (n + 1), 'success': True}
+        res = {'-s': 'loop-%d' % (n + 1)}
     elif stage == 'crash':
         raise Exception("Failed on purpose!")
     elif stage == 'fail':
-        res = {'next_stage': 'fail', 'success': False}
+        sys.exit("Failed as per your request")
     elif stage == 'success':
-        res = {'success': True}
+        res = {}
     else:
         raise Exception("Unsupported stage: " + stage)
 

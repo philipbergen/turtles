@@ -1,5 +1,5 @@
 {
-    "stage": "build",
-    "image": "turtle-demo",
-    "timeout": 30
+    "-s": "build",
+    "-d": "turtle-demo",
+    "-t": 30
 }
