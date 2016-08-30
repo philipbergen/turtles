@@ -1,7 +1,11 @@
 from __future__ import print_function
 import os
 import sys
+import time
 import attr
+from subprocess import STDOUT
+
+import six
 
 
 def sp_run(cmd, stderr=None, stdout=None, check=True, timeout=None):
@@ -24,13 +28,20 @@ def em(*names):
     """
     if not __EM_CACHE:
         import json
-        with open([p for p in sys.path[::-1] if p.endswith('/site-packages')][0] + '/em/emojis.json') as fin:
+        # TODO: What is the right way to do this?
+        with open([p for p in sys.path[::-1] if p.endswith('/site-packages')][
+                      0] + '/turtles-0.0.1-py2.7.egg/turtles/emojis.json') as fin:
             __EM_CACHE.update(json.load(fin))
     return ' '.join([__EM_CACHE[name]['char'] for name in names])
 
 
+class PrepFailed(Exception):
+    """ Raised to indicate that a prep for a stage terminated with non-zero exit code.
+    """
+
+
 class StageFailed(Exception):
-    """ Raised to indicate that a stage did not set success = true.
+    """ Raised to indicate that a stage terminated with non-zero exit code.
     """
 
 
@@ -70,8 +81,6 @@ def stage(neck):
         :param neck: TurtleNeck input for the stage.
         :raise: StageFailed if the docker command exits non-zero.
     """
-    import time
-    from subprocess import STDOUT, CalledProcessError
     print(em('cinema'), "Starting stage", neck.s)
     try:
         os.makedirs(neck.o)
@@ -96,3 +105,34 @@ def stage(neck):
             if stde:
                 sys.stderr.write(stde)
             raise StageFailed(neck)
+
+
+def prep(settings):
+    """ Runs prep script before the stage specified in settings runs.
+        :param settings: The dictionary of settings that is going to be the input arg to TurtleNeck for the next stage.
+    """
+    cmd = [settings['-p'], '--prep']
+    for k, v in sorted(six.iteritems(settings)):
+        if k != '-p' and not k.startswith('--') and v is not None:
+            if type(v) is list:
+                for vv in v:
+                    cmd.append(k)
+                    cmd.append(vv)
+            else:
+                cmd.append(k)
+                cmd.append(str(v))
+    print(em('mortar_board'), cmd)
+    with open(os.path.join(settings['-o'], 'log.txt'), 'a') as fout:
+        fout.write('Log started: %d-%.2d-%.2d %.2d:%.2d:%.2d\n' % time.localtime()[:6])
+        print(em('scroll'), "Output logged in", fout.name)
+        returncode, stdo, stde = sp_run(cmd, stderr=STDOUT, stdout=fout, check=True, timeout=settings['-t'])
+        if stdo:
+            fout.write(stdo)
+        if stde:
+            fout.write(stde)
+        if returncode:
+            if stdo:
+                sys.stdout.write(stdo)
+            if stde:
+                sys.stderr.write(stde)
+            raise PrepFailed(settings)

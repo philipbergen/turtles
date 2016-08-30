@@ -1,6 +1,6 @@
 """
 Usage:
-    trtl [-j SETTINGS_JSON] [-i INPUT_DIR] [-o OUTPUT_DIR] [-d IMAGE] [-s STAGE] [-t TIMEOUT]
+    trtl [-j SETTINGS_JSON] [-i INPUT_DIR] [-o OUTPUT_DIR] [-d IMAGE] [-s STAGE] [-t TIMEOUT] [-p PREP]
          [-v VOLUME]... [--stop STOP] [--one] [--max-recurse MAX_RECURSE] [--verbose]
 
 Options:
@@ -20,6 +20,10 @@ Options:
     -t TIMEOUT     The timeout in seconds, only supported on python3.
 
     -v VOLUME      Extra volume mounts for the container. Same format as -v for docker.
+
+    -p PREP        Preparatory script, will be run before attempting the stage (outside of container). Script is
+                   launched from the directory trtl runs in with arguments: --prep <CURRENT ARGUMENTS>
+                   Example: turtles/stage --prep -j settings.json -s init -i . -o build/init -d my-maven-project
 
     --one          Run just one stage, then stop.
 
@@ -41,11 +45,12 @@ from pprint import pprint
 def main(opts):
     """ Acts on the options derived from the usage described in __doc__.
     """
+
     def say(*args):
         if opts['--verbose']:
             print(*args)
 
-    from . import TurtleNeck, stage, StageFailed, MaxRecursion, em
+    from . import TurtleNeck, stage, prep, StageFailed, MaxRecursion, em
     o_outdir = opts['-o']
     if o_outdir is not None:
         o_outdir = os.path.abspath(o_outdir)
@@ -69,6 +74,13 @@ def main(opts):
         settings['-o'] = settings['-i']
     settings['-i'] = os.path.abspath(settings['-i'])
     settings['-o'] = os.path.abspath(settings['-o'])
+    if settings['-p']:
+        say("PREP", settings['-p'])
+        if not os.path.isabs(settings['-p']):
+            if settings['-j']:
+                settings['-p'] = os.path.join(os.path.abspath(os.path.dirname(settings['-j'])), settings['-p'])
+            settings['-p'] = os.path.abspath(settings['-p'])
+    say("SETTINGS", settings)
     del settings['-j']
 
     for _ in range(opts['--max-recurse']):
@@ -80,6 +92,8 @@ def main(opts):
             if os.path.exists(res_path):
                 os.unlink(res_path)
             say(_, "SETTINGS", settings)
+            if settings['-p']:
+                prep(settings)
             stage(TurtleNeck(settings))
             print(em('+1'), "Stage successful:", settings['-s'])
             if not os.path.exists(res_path):
