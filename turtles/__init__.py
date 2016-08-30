@@ -53,6 +53,16 @@ class InvalidPreconditions(Exception):
     """
 
 
+def load_pipeline(filename):
+    """ Import the pipeline script. The script should have the method "stage(settings)", it will be called by trtl.
+    """
+    from types import ModuleType
+    pipeline = ModuleType('turtle_pipeline')
+    #pipeline.__file__ = filename
+    exec(open(filename).read(), pipeline.__dict__)
+    return pipeline
+
+
 @attr.s
 class TurtleNeck(object):
     """ opts are the options as given by the docstring in turtle.trtl
@@ -67,7 +77,7 @@ class TurtleNeck(object):
 
     @property
     def volumes(self):
-        xtra = [os.path.abspath(v.split(":", 1)[0]) + ":" + v.split(":", 1)[1] for v in self.opts['-v']]
+        xtra = [os.path.abspath(os.path.expanduser(v.split(":", 1)[0])) + ":" + v.split(":", 1)[1] for v in self.opts['-v']]
         return [self.opts['-i'] + ':/input:ro', self.opts['-o'] + ':/output:rw'] + xtra
 
     def __getattr__(self, item):
@@ -103,34 +113,3 @@ def stage(neck):
             if stde:
                 sys.stderr.write(stde)
             raise StageFailed(neck)
-
-
-def prep(settings):
-    """ Runs prep script before the stage specified in settings runs.
-        :param settings: The dictionary of settings that is going to be the input arg to TurtleNeck for the next stage.
-    """
-    cmd = [settings['-p'], '--prep']
-    for k, v in sorted(six.iteritems(settings)):
-        if k != '-p' and not k.startswith('--') and v is not None:
-            if type(v) is list:
-                for vv in v:
-                    cmd.append(k)
-                    cmd.append(vv)
-            else:
-                cmd.append(k)
-                cmd.append(str(v))
-    print(em('mortar_board'), cmd)
-    with open(os.path.join(settings['-o'], 'log.txt'), 'a') as fout:
-        fout.write('Log started: %d-%.2d-%.2d %.2d:%.2d:%.2d\n' % time.localtime()[:6])
-        print(em('scroll'), "Output logged in", fout.name)
-        returncode, stdo, stde = sp_run(cmd, stderr=STDOUT, stdout=fout, check=True, timeout=settings['-t'])
-        if stdo:
-            fout.write(stdo)
-        if stde:
-            fout.write(stde)
-        if returncode:
-            if stdo:
-                sys.stdout.write(stdo)
-            if stde:
-                sys.stderr.write(stde)
-            raise PrepFailed(settings)

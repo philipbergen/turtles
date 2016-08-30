@@ -1,0 +1,27 @@
+#!/bin/bash
+set -eu
+cd /input
+same=false
+[ $(stat +inode /input) = $(stat +inode /output) ] && same=true
+# Do the actual work of the stage
+mvn "$1"
+# Determine what the next stage should be
+case "$1" in
+compile)
+    next=test
+    ;;
+test)
+    next=package
+    [ $same != true ] && cp -r target/surefire-reports /output/
+    ;;
+package)
+    next=
+    ;;
+*)
+    echo "Stage $1; UNSUPPORTED"
+    exit 1
+    ;;
+esac
+# Generate the result.json
+[ -n "$next" ] && echo "{\"-s\":\"$next\"}" > /output/result.json
+

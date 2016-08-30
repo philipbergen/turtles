@@ -1,0 +1,4 @@
+#!/bin/bash
+set -eu
+cd /cwd
+git clone $(cat /input/git-url.txt)

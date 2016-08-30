@@ -1,10 +1,10 @@
 """
 Usage:
-    trtl [-j SETTINGS_JSON] [-i INPUT_DIR] [-o OUTPUT_DIR] [-d IMAGE] [-s STAGE] [-t TIMEOUT] [-p PREP]
+    trtl [-p PIPELINE] [-i INPUT_DIR] [-o OUTPUT_DIR] [-d IMAGE] [-s STAGE] [-t TIMEOUT]
          [-v VOLUME]... [--stop STOP] [--one] [--max-recurse MAX_RECURSE] [--verbose]
 
 Options:
-    -j SETTINGS_JSON  Path to json file that contains the parameters.
+    -p PIPELINE    Path to a turtle pipeline script.
 
     -i INPUT_DIR   The directory to mount as /input inside the container. Typically the root of your source tree. If not
                    specified os.path.dirname(<SETTINGS_JSON>) will be used.
@@ -20,10 +20,6 @@ Options:
     -t TIMEOUT     The timeout in seconds, only supported on python3.
 
     -v VOLUME      Extra volume mounts for the container. Same format as -v for docker.
-
-    -p PREP        Preparatory script, will be run before attempting the stage (outside of container). Script is
-                   launched from the directory trtl runs in with arguments: --prep <CURRENT ARGUMENTS>
-                   Example: turtles/stage --prep -j settings.json -s init -i . -o build/init -d my-maven-project
 
     --one          Run just one stage, then stop.
 
@@ -50,7 +46,7 @@ def main(opts):
         if opts['--verbose']:
             print(*args)
 
-    from . import TurtleNeck, stage, prep, StageFailed, MaxRecursion, em
+    from . import TurtleNeck, load_pipeline, stage, StageFailed, MaxRecursion, em
     o_outdir = opts['-o']
     if o_outdir is not None:
         o_outdir = os.path.abspath(o_outdir)
@@ -58,30 +54,23 @@ def main(opts):
     opts['--max-recurse'] = int(opts['--max-recurse'])
     say("OPTS", opts)
 
-    if settings['-j']:
-        with open(settings['-j']) as fin:
-            settings.update(json.load(fin))
-    if not settings['-j'] and not settings['-i']:
-        raise Exception("At least one of INPUT_DIR and SETTINGS_JSON must be set.")
+    if settings['-p']:
+        settings.update(load_pipeline(settings['-p']).stage(settings))
+    if not settings['-p'] and not settings['-i']:
+        raise Exception("At least one of INPUT_DIR and PIPELINE must be set.")
     if not settings['-s']:
         raise Exception("STAGE must be set.")
     if not settings['-d']:
         raise Exception("IMAGE must be set.")
 
     if not settings['-i']:
-        settings['-i'] = os.path.dirname(settings['-j'])
+        settings['-i'] = os.path.dirname(settings['-p'])
     if not settings['-o']:
         settings['-o'] = settings['-i']
-    settings['-i'] = os.path.abspath(settings['-i'])
-    settings['-o'] = os.path.abspath(settings['-o'])
-    if settings['-p']:
-        say("PREP", settings['-p'])
-        if not os.path.isabs(settings['-p']):
-            if settings['-j']:
-                settings['-p'] = os.path.join(os.path.abspath(os.path.dirname(settings['-j'])), settings['-p'])
-            settings['-p'] = os.path.abspath(settings['-p'])
+    settings['-i'] = os.path.abspath(os.path.expanduser(settings['-i']))
+    settings['-o'] = os.path.abspath(os.path.expanduser(settings['-o']))
     say("SETTINGS", settings)
-    del settings['-j']
+    del settings['-p']
 
     for _ in range(opts['--max-recurse']):
         try:
@@ -92,8 +81,6 @@ def main(opts):
             if os.path.exists(res_path):
                 os.unlink(res_path)
             say(_, "SETTINGS", settings)
-            if settings['-p']:
-                prep(settings)
             stage(TurtleNeck(settings))
             print(em('+1'), "Stage successful:", settings['-s'])
             if not os.path.exists(res_path):
