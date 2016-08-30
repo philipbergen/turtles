@@ -29,8 +29,7 @@ def em(*names):
     if not __EM_CACHE:
         import json
         # TODO: What is the right way to do this?
-        with open([p for p in sys.path[::-1] if p.endswith('/site-packages')][
-                      0] + '/turtles-0.0.1-py2.7.egg/turtles/emojis.json') as fin:
+        with open(os.path.join(os.path.dirname(__file__), 'emojis.json')) as fin:
             __EM_CACHE.update(json.load(fin))
     return ' '.join([__EM_CACHE[name]['char'] for name in names])
 
