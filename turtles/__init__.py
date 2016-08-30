@@ -58,8 +58,8 @@ class TurtleNeck(object):
 
     @property
     def volumes(self):
-        return [self.opts['-i'] + ':/input:ro', self.opts['-o'] + ':/output:rw'] + (
-            self.opts['-v'] or [])
+        xtra = [os.path.abspath(v.split(":", 1)[0]) + ":" + v.split(":", 1)[1] for v in self.opts['-v']]
+        return [self.opts['-i'] + ':/input:ro', self.opts['-o'] + ':/output:rw'] + xtra
 
     def __getattr__(self, item):
         return self.opts[("-" + item) if len(item) == 1 else ("--" + item.replace("_", '-'))]
