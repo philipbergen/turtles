@@ -28,7 +28,6 @@ def em(*names):
     """
     if not __EM_CACHE:
         import json
-        # TODO: What is the right way to do this?
         with open(os.path.join(os.path.dirname(__file__), 'emojis.json')) as fin:
             __EM_CACHE.update(json.load(fin))
     return ' '.join([__EM_CACHE[name]['char'] for name in names])
