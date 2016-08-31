@@ -25,7 +25,7 @@ __EM_CACHE = {}
 def em(*names):
     """ :return: String of emojis from named emojis in names.
     """
-    if os.environ.get("JENKINS_URL", None) is not None:
+    if os.environ.get("JOB_NAME", None) is not None:
         return "=] "
     if not __EM_CACHE:
         import json
