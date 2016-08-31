@@ -97,7 +97,7 @@ def stage(settings):
             di = docker_inspect(image)
             res = []
             for ep, _ in six.iteritems(di[-1]["Config"]["ExposedPorts"]):
-                p, _ = (ep + '/').split('/', 1)[0]
+                p, _ = (ep + '/').split('/', 1)
                 res.append('-p')
                 res.append(p + ":" + p)
             return res
