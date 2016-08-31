@@ -38,6 +38,11 @@ class PrepFailed(Exception):
     """
 
 
+class ImageMissing(Exception):
+    """ Raised when a docker image is addressed that does not exist.
+    """
+
+
 class StageFailed(Exception):
     """ Raised to indicate that a stage terminated with non-zero exit code.
     """
@@ -63,6 +68,19 @@ def load_pipeline(filename):
     return pipeline
 
 
+def docker_inspect(image):
+    """ Returns the inspection structure (a list of dictionaries) from docker inspect.
+        :param image: Name of image.
+    """
+    import json
+    from subprocess import Popen, PIPE
+    pope = Popen(["docker", "inspect", image], stdout=PIPE)
+    so, _ = pope.communicate()
+    if pope.returncode:
+        raise ImageMissing(image)
+    return json.loads(so)
+
+
 def stage(settings):
     """ Runs a stage with docker.
         :param settings: The settings dict.
@@ -74,6 +92,18 @@ def stage(settings):
                 settings['-v']]
         return [settings['-i'] + ':/input:ro', settings['-o'] + ':/output:rw'] + xtra
 
+    def ports(image):
+        try:
+            di = docker_inspect(image)
+            res = []
+            for ep, _ in six.iteritems(di[-1]["Config"]["ExposedPorts"]):
+                p, _ = (ep + '/').split('/', 1)[0]
+                res.append('-p')
+                res.append(p + ":" + p)
+            return res
+        except (ImageMissing, IndexError, KeyError):
+            return []
+
     print(em('cinema'), "Starting stage", settings['-s'])
     try:
         os.makedirs(settings['-o'])
@@ -82,6 +112,7 @@ def stage(settings):
     cmd = ["docker", 'run', '--rm']
     for vol in volumes(settings):
         cmd += ["-v", vol]
+    cmd += ports(settings['-d'])
     cmd += [settings['-d'], settings['-s']]
     print(em('whale'), cmd)
     with open(os.path.join(settings['-o'], 'log.txt'), 'a') as fout:
