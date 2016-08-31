@@ -30,8 +30,10 @@ def stage(settings):
             os.makedirs(".jenkins")
         except OSError:
             pass
+        uidgid = "%d:%d" % (os.getuid(), os.getgid())
         print("Will now launch Jenkins, please press run the wizard and shut down jenkins after")
-        cmd = ["docker", "run", "-p", "8080:8080", "--rm", "-v", os.path.abspath(".jenkins") + ":/var/jenkins_home:rw",
+        cmd = ["docker", "run", "--user", uidgid, "-p", "8080:8080", "--rm", "-v",
+               os.path.abspath(".jenkins") + ":/var/jenkins_home:rw",
                image]
         call(cmd)
     pope = Popen(["git", "remote", "get-url", "origin"], stdout=PIPE)

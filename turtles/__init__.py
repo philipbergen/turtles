@@ -108,7 +108,8 @@ def stage(settings):
         os.makedirs(settings['-o'])
     except OSError:
         pass  # Ignore if directory exists already
-    cmd = ["docker", 'run', '--rm']
+    uidgid = "%d:%d" % (os.getuid(), os.getgid())
+    cmd = ["docker", 'run', '--rm', "--user", uidgid]
     for vol in volumes(settings):
         cmd += ["-v", vol]
     cmd += ports(settings['-d'])
