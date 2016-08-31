@@ -43,7 +43,8 @@
         set -eu
         here=$(pwd)
         cd /cwd
-        trtl -i . -o "$here" -p pipeline.py
+        rm -f log.txt
+        trtl -i . -o "$here" -p /turtles/pipelines/mvn/pipeline.py -s install
         echo "****************************************************************************"
         cat log.txt
       </command>

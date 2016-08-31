@@ -20,7 +20,7 @@ test)
 package)
     next=install
     ;;
-deploy|clean)
+install|deploy|clean)
     next=
     ;;
 *)
