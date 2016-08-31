@@ -23,8 +23,10 @@ def stage(settings):
                     sys.exit("Docker build failed.")
             finally:
                 os.chdir(here)
+    if not os.path.exists("target"):
+        os.mkdir("target")
     return {
         "-s": "compile",
         "-d": image,
-        "-v": ["~/.m2:/root/.m2:rw", "target:/input/target:rw"],
+        "-v": ["~/.m2:/home/turtle/.m2:rw", "target:/input/target:rw"],
     }
