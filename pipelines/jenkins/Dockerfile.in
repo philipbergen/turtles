@@ -6,5 +6,5 @@ RUN apt-get update \
  && (cd /turtles; python setup.py install) \
  && chmod u+s /usr/bin/docker
 RUN echo "turtle:x:50657:50657::/var/jenkins_home:" >> /etc/passwd \
- && chown -R 50657:50657 /var/jenkins_home
+ && chown -R 50657:50657 /var/jenkins_home /turtles
 USER turtle
