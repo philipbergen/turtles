@@ -35,7 +35,6 @@ import os
 import json
 
 import six
-from pprint import pprint
 
 
 def main(opts):
@@ -46,7 +45,7 @@ def main(opts):
         if opts['--verbose']:
             print(*args)
 
-    from . import TurtleNeck, load_pipeline, stage, StageFailed, MaxRecursion, em
+    from . import load_pipeline, stage, StageFailed, MaxRecursion, em
     o_outdir = opts['-o']
     if o_outdir is not None:
         o_outdir = os.path.abspath(o_outdir)
@@ -81,7 +80,7 @@ def main(opts):
             if os.path.exists(res_path):
                 os.unlink(res_path)
             say(_, "SETTINGS", settings)
-            stage(TurtleNeck(settings))
+            stage(settings)
             print(em('+1'), "Stage successful:", settings['-s'])
             if not os.path.exists(res_path):
                 say("MISSING", res_path)

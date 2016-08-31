@@ -58,51 +58,36 @@ def load_pipeline(filename):
     """
     from types import ModuleType
     pipeline = ModuleType('turtle_pipeline')
-    #pipeline.__file__ = filename
+    # pipeline.__file__ = filename
     exec(open(filename).read(), pipeline.__dict__)
     return pipeline
 
 
-@attr.s
-class TurtleNeck(object):
-    """ opts are the options as given by the docstring in turtle.trtl
-    """
-    opts = attr.ib()
-
-    # def __repr__(self):
-    #     return "TurtleNeck(%r)" % self.opts
-    #
-    # def __str__(self):
-    #     return "<TurtleNeck(%s)>" % ', '.join(["%s=%s" % (k, v) for k, v in six.iteritems(self.opts) and v is not None])
-
-    @property
-    def volumes(self):
-        xtra = [os.path.abspath(os.path.expanduser(v.split(":", 1)[0])) + ":" + v.split(":", 1)[1] for v in self.opts['-v']]
-        return [self.opts['-i'] + ':/input:ro', self.opts['-o'] + ':/output:rw'] + xtra
-
-    def __getattr__(self, item):
-        return self.opts[("-" + item) if len(item) == 1 else ("--" + item.replace("_", '-'))]
-
-
-def stage(neck):
+def stage(settings):
     """ Runs a stage with docker.
-        :param neck: TurtleNeck input for the stage.
+        :param settings: The settings dict.
         :raise: StageFailed if the docker command exits non-zero.
     """
-    print(em('cinema'), "Starting stage", neck.s)
+
+    def volumes(settings):
+        xtra = [os.path.abspath(os.path.expanduser(v.split(":", 1)[0])) + ":" + v.split(":", 1)[1] for v in
+                settings['-v']]
+        return [settings['-i'] + ':/input:ro', settings['-o'] + ':/output:rw'] + xtra
+
+    print(em('cinema'), "Starting stage", settings['-s'])
     try:
-        os.makedirs(neck.o)
+        os.makedirs(settings['-o'])
     except OSError:
         pass  # Ignore if directory exists already
     cmd = ["docker", 'run', '--rm']
-    for vol in neck.volumes:
+    for vol in volumes(settings):
         cmd += ["-v", vol]
-    cmd += [neck.d, neck.s]
+    cmd += [settings['-d'], settings['-s']]
     print(em('whale'), cmd)
-    with open(os.path.join(neck.o, 'log.txt'), 'a') as fout:
+    with open(os.path.join(settings['-o'], 'log.txt'), 'a') as fout:
         fout.write('Log started: %d-%.2d-%.2d %.2d:%.2d:%.2d\n' % time.localtime()[:6])
         print(em('scroll'), "Output logged in", fout.name)
-        returncode, stdo, stde = sp_run(cmd, stderr=STDOUT, stdout=fout, check=True, timeout=neck.t)
+        returncode, stdo, stde = sp_run(cmd, stderr=STDOUT, stdout=fout, check=True, timeout=settings['-t'])
         if stdo:
             fout.write(stdo)
         if stde:
@@ -112,4 +97,4 @@ def stage(neck):
                 sys.stdout.write(stdo)
             if stde:
                 sys.stderr.write(stde)
-            raise StageFailed(neck)
+            raise StageFailed(settings)
