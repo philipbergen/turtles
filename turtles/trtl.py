@@ -6,16 +6,19 @@ Usage:
 Options:
     -p PIPELINE    Path to a turtle pipeline script.
 
-    -i INPUT_DIR   The directory to mount as /input inside the container. Typically the root of your source tree. If not
+    -i INPUT_DIR   The directory to mount as /input inside the container. Typically the root
+                   of your source tree. If not
                    specified os.path.dirname(<SETTINGS_JSON>) will be used.
 
-    -o OUTPUT_DIR  Target directory base for output from this stage. If not specified <INPUT_DIR> will be used. Only
-                   if <OUTPUT_DIR> is set, the combined <OUTPUT_DIR>/<STAGE> will be used.
+    -o OUTPUT_DIR  Target directory base for output from this stage. If not specified
+                   <INPUT_DIR> will be used. Only if <OUTPUT_DIR> is set, the combined
+                   <OUTPUT_DIR>/<STAGE> will be used.
 
-    -d IMAGE       Docker image URL. If not specified, the path from <INPUT_DIR>/result.json will be used.
+    -d IMAGE       Docker image URL. If not specified, the path from <INPUT_DIR>/result.json
+                   will be used.
 
-    -s STAGE       Optionally specify the stage to run on the input. If not specified it will be derived
-                   from <INPUT_DIR>/settings.json
+    -s STAGE       Optionally specify the stage to run on the input. If not specified it will
+                   be derived from <INPUT_DIR>/settings.json
 
     -t TIMEOUT     The timeout in seconds, only supported on python3.
 
@@ -78,7 +81,8 @@ def main(opts):
     for _ in range(opts['--max-recurse']):
         try:
             if o_outdir:
-                print(em("point_right"), "Using", o_outdir, "as base, appending", settings['-s'], "for OUTPUT_DIR")
+                print(em("point_right"), "Using", o_outdir, "as base, appending", settings['-s'],
+                      "for OUTPUT_DIR")
                 settings['-o'] = os.path.join(o_outdir, settings['-s'])
             res_path = settings['-o'] + '/result.json'
             if os.path.exists(res_path):

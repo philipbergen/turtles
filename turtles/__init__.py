@@ -58,7 +58,8 @@ class InvalidPreconditions(Exception):
 
 
 def load_pipeline(filename):
-    """ Import the pipeline script. The script should have the method "stage(settings)", it will be called by trtl.
+    """ Import the pipeline script. The script should have the method "stage(settings)",
+        it will be called by trtl.
     """
     from types import ModuleType
     pipeline = ModuleType('turtle_pipeline')
@@ -87,8 +88,8 @@ def stage(settings):
     """
 
     def volumes(settings):
-        xtra = [os.path.abspath(os.path.expanduser(v.split(":", 1)[0])) + ":" + v.split(":", 1)[1] for v in
-                settings['-v']]
+        xtra = [os.path.abspath(os.path.expanduser(v.split(":", 1)[0])) + ":" + v.split(":", 1)[1]
+                for v in settings['-v']]
         return [settings['-i'] + ':/input:ro', settings['-o'] + ':/output:rw'] + xtra
 
     def ports(image):
@@ -118,7 +119,8 @@ def stage(settings):
     with open(os.path.join(settings['-o'], 'log.txt'), 'a') as fout:
         fout.write('Log started: %d-%.2d-%.2d %.2d:%.2d:%.2d\n' % time.localtime()[:6])
         print(em('scroll'), "Output logged in", fout.name)
-        returncode, stdo, stde = sp_run(cmd, stderr=STDOUT, stdout=fout, check=True, timeout=settings['-t'])
+        returncode, stdo, stde = sp_run(cmd, stderr=STDOUT, stdout=fout, check=True,
+                                        timeout=settings['-t'])
         if stdo:
             fout.write(stdo)
         if stde:
