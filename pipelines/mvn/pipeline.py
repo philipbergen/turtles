@@ -26,7 +26,7 @@ def stage(settings):
     if not os.path.exists("target"):
         os.mkdir("target")
     return {
-        "-s": "compile",
+        "-s": "validate",
         "-d": image,
         "-v": ["~/.m2:/home/turtle/.m2:rw", "target:/input/target:rw"],
     }
