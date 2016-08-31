@@ -113,9 +113,7 @@ def stage(settings):
     for vol in volumes(settings):
         cmd += ["-v", vol]
     cmd += ports(settings['-d'])
-    cmd.append(settings['-d'])
-    if settings['-s'] is not None:
-        cmd.append(settings['-s'])
+    cmd += [settings['-d'], settings['-s']]
     print(em('whale'), cmd)
     with open(os.path.join(settings['-o'], 'log.txt'), 'a') as fout:
         fout.write('Log started: %d-%.2d-%.2d %.2d:%.2d:%.2d\n' % time.localtime()[:6])
