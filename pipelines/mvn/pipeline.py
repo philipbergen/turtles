@@ -15,6 +15,9 @@ def stage(settings):
             print("Preparing for pipeline, logging to", fout.name)
             try:
                 os.chdir(os.path.dirname(settings['-p']))
+                with open("Dockerfile", 'w') as df:
+                    uidgid = "%d:%d" % (os.getuid(), os.getgid())
+                    df.write(open("Dockerfile.in").read().replace("50657:50657", uidgid))
                 res = call(["docker", "build", "-t", image, "."], stdout=fout)
                 if res:
                     sys.exit("Docker build failed.")

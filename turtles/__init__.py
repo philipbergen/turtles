@@ -25,6 +25,8 @@ __EM_CACHE = {}
 def em(*names):
     """ :return: String of emojis from named emojis in names.
     """
+    if os.environ.get("JENKINS_URL", None) is not None:
+        return "=] "
     if not __EM_CACHE:
         import json
         with open(os.path.join(os.path.dirname(__file__), 'emojis.json')) as fin:
@@ -109,8 +111,7 @@ def stage(settings):
         os.makedirs(settings['-o'])
     except OSError:
         pass  # Ignore if directory exists already
-    uidgid = "%d:%d" % (os.getuid(), os.getgid())
-    cmd = ["docker", 'run', '--rm', "--user", uidgid]
+    cmd = ["docker", 'run', '--rm']
     for vol in volumes(settings):
         cmd += ["-v", vol]
     cmd += ports(settings['-d'])

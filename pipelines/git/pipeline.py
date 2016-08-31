@@ -21,6 +21,9 @@ def stage(settings):
             print("Preparing for pipeline, logging to", fout.name)
             try:
                 os.chdir(os.path.dirname(settings['-p']))
+                with open("Dockerfile", 'w') as df:
+                    uidgid = "%d:%d" % (os.getuid(), os.getgid())
+                    df.write(open("Dockerfile.in").read().replace("50657:50657", uidgid))
                 if not os.path.exists('.ssh'):
                     shutil.copytree(os.path.expanduser("~/.ssh"), ".ssh")
                 res = call(["docker", "build", "-t", image, "."], stdout=fout)

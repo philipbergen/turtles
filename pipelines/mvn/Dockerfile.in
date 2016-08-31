@@ -1,0 +1,6 @@
+FROM maven:3.3-jdk-8-alpine
+RUN echo "turtle:x:50657:50657::/home/turtle:" >> /etc/passwd && mkdir /home/turtle
+COPY maven_wrap /home/turtle
+RUN chown -R 50657:50657 /home/turtle
+USER turtle
+ENTRYPOINT ["/bin/bash", "/home/turtle/maven_wrap"]
