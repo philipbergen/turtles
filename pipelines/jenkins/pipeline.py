@@ -5,32 +5,31 @@ def stage(settings):
     import sys
     import shutil
     from subprocess import call, Popen, PIPE
+    from turtles import interpolate_file, docker_inspect, ImageMissing
     shares = ['~/.ssh', '~/.m2']
     for share in shares:
         if not os.path.exists(os.path.expanduser(share)):
             sys.exit("For jenkins to work properly you need: " + share)
     image = "turtle-jenkins"
-    pope = Popen(["docker", "images", "-q", image], stdout=PIPE)
-    so, _ = pope.communicate()
-    if not so.strip():
+    try:
+        docker_inspect(image)
+    except ImageMissing:
         here = os.getcwd()
         with open(os.path.join(here, "log.txt"), 'a') as fout:
             print("Preparing for pipeline, logging to", fout.name)
             try:
                 os.chdir(os.path.dirname(settings['-p']))
-                with open("Dockerfile", 'w') as df:
-                    uidgid = "%d:%d" % (os.getuid(), os.getgid())
-                    df.write(open("Dockerfile.in").read().replace("50657:50657", uidgid))
-                call(["git", "clone", "git@github.com:philipbergen/turtles.git"])
-                res = call(["docker", "build", "-t", image, "."], stdout=fout)
-                if res:
+                if call(["git", "clone", "git@github.com:philipbergen/turtles.git"]):
+                    sys.exit("Failed: git clone git@github.com:philipbergen/turtles.git")
+                interpolate_file("Dockerfile.in", "Dockerfile", log=fout.write)
+                if call(["docker", "build", "-t", image, "."], stdout=fout):
                     sys.exit("Docker build failed.")
             finally:
                 shutil.rmtree("turtles")
                 os.chdir(here)
     if not os.path.exists(".jenkins/plugins"):
         try:
-            os.makedirs(".jenkins")
+            os.mkdir(".jenkins")
         except OSError:
             pass
         uidgid = "%d:%d" % (os.getuid(), os.getgid())
@@ -56,16 +55,16 @@ def stage(settings):
     cfg_path = ".jenkins/jobs/%(name)s/config.xml" % template
     if not os.path.exists(cfg_path):
         try:
-            os.makedirs(".jenkins/jobs/%(name)s" % template)
+            os.makedirs(os.path.dirname(cfg_path))
         except OSError:
             pass
-        with open(cfg_path, 'w') as fout:
-            cfg_xml = open(os.path.join(os.path.dirname(settings['-p']), "config.xml")).read()
-            fout.write(cfg_xml % template)
+        interpolate_file(os.path.join(os.path.dirname(settings['-p']), "config.xml"), cfg_path,
+                         template)
     return {
         "-s": '/usr/local/bin/jenkins.sh',
         "-d": image,
-        "-v": ["/var/run/docker.sock:/var/run/docker.sock", ".jenkins:/var/jenkins_home:rw", ".:/cwd:rw"] + [
-            '%s:%s:rw' % (share, share.replace('~', '/var/jenkins_home')) for
-            share in shares],
+        "-v": ["/var/run/docker.sock:/var/run/docker.sock", ".jenkins:/var/jenkins_home:rw",
+               ".:/cwd:rw"] + [
+                  '%s:%s:rw' % (share, share.replace('~', '/var/jenkins_home')) for
+                  share in shares],
     }

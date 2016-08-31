@@ -5,6 +5,7 @@ def stage(settings):
     import sys
     import shutil
     from subprocess import call, Popen, PIPE
+    from turtles import docker_inspect, ImageMissing, interpolate_file
     if not os.path.exists("git-url.txt"):
         try:
             giturl = raw_input("Please enter git URL: ")
@@ -13,21 +14,16 @@ def stage(settings):
         with open("git-url.txt", "w") as fout:
             fout.write(giturl)
     image = "turtle-git"
-    pope = Popen(["docker", "images", "-q", image], stdout=PIPE)
-    so, _ = pope.communicate()
-    if not so.strip():
+    try:
+        docker_inspect(image)
+    except ImageMissing:
         here = os.getcwd()
         with open(os.path.join(here, "log.txt"), 'a') as fout:
             print("Preparing for pipeline, logging to", fout.name)
             try:
                 os.chdir(os.path.dirname(settings['-p']))
-                with open("Dockerfile", 'w') as df:
-                    uidgid = "%d:%d" % (os.getuid(), os.getgid())
-                    df.write(open("Dockerfile.in").read().replace("50657:50657", uidgid))
-                if not os.path.exists('.ssh'):
-                    shutil.copytree(os.path.expanduser("~/.ssh"), ".ssh")
-                res = call(["docker", "build", "-t", image, "."], stdout=fout)
-                if res:
+                interpolate_file("Dockerfile.in", "Dockerfile", log=fout.write)
+                if call(["docker", "build", "-t", image, "."], stdout=fout):
                     sys.exit("Docker build failed.")
             finally:
                 shutil.rmtree(".ssh")
@@ -35,5 +31,5 @@ def stage(settings):
     return {
         "-s": "setup",  # Ignored by repo_setup
         "-d": image,
-        "-v": [".:/cwd:rw"],
+        "-v": [".:/cwd:rw", "~/.ssh:/home/turtle/.ssh:rw"],
     }

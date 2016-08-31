@@ -83,6 +83,20 @@ def docker_inspect(image):
     return json.loads(so)
 
 
+def interpolate_file(input_path, output_path, kw={}, log=lambda x: None):
+    """ Using a file formatted with python %(xyz)s as input, creates the output file.
+        :param kw: Dictionary with key-val for interpolation, uid_gid is automatically
+            added for convenience.
+        :param log: Set to a function that is called with strings for logging, if desired
+    """
+    if 'uid_gid' not in kw:
+        kw['uid_gid'] = "%d:%d" % (os.getuid(), os.getgid())
+        log("Added uid_gid: " + kw['uid_gid'])
+    with open(output_path, 'w') as fout, open(input_path) as fin:
+        log("Extrapolating " + input_path + " to " + output_path)
+        fout.write(open(fin).read() % kw)
+
+
 def stage(settings):
     """ Runs a stage with docker.
         :param settings: The settings dict.
@@ -90,8 +104,9 @@ def stage(settings):
     """
 
     def volumes(settings):
-        xtra = [os.path.abspath(os.path.expanduser(v.split(":", 1)[0])) + ":" + v.split(":", 1)[1]
-                for v in settings['-v']]
+        xtra = [
+            os.path.abspath(os.path.expanduser(v.split(":", 1)[0])) + ":" + v.split(":", 1)[1]
+            for v in settings['-v']]
         return [settings['-i'] + ':/input:ro', settings['-o'] + ':/output:rw'] + xtra
 
     def ports(image):

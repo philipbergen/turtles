@@ -1,13 +1,11 @@
 def stage(settings):
-    """ Creates a mvn image and pipeline.
+    """ Creates a self-test image and pipeline.
     """
     import os
     import sys
     from subprocess import call
     from turtles import interpolate_file, docker_inspect, ImageMissing
-    if not os.path.exists(os.path.expanduser("~/.m2")):
-        sys.exit("Maven configuration in ~/.m2 is required")
-    image = "turtle-mvn"
+    image = "turtle-selftest"
     try:
         docker_inspect(image)
     except ImageMissing:
@@ -21,10 +19,7 @@ def stage(settings):
                     sys.exit("Docker build failed.")
             finally:
                 os.chdir(here)
-    if not os.path.exists("target"):
-        os.mkdir("target")
     return {
-        "-s": "validate",
+        "-s": "test",
         "-d": image,
-        "-v": ["~/.m2:/home/turtle/.m2:rw", "target:/input/target:rw"],
     }

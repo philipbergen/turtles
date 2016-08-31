@@ -1,8 +1,8 @@
 FROM progrium/busybox
 RUN opkg-install git bash openssh-client
-RUN echo "turtle:x:50657:50657::/home/turtle:" >> /etc/passwd && mkdir /home/turtle
+RUN echo "turtle:x:%(uid_gid)s::/home/turtle:" >> /etc/passwd && mkdir /home/turtle
 COPY repo_setup /home/turtle
 COPY .ssh /home/turtle/.ssh
-RUN chown -R 50657:50657 /home/turtle
+RUN chown -R %(uid_gid)s /home/turtle
 USER turtle
 ENTRYPOINT ["/bin/bash", "/home/turtle/repo_setup"]

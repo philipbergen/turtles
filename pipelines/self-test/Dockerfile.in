@@ -1,6 +1,6 @@
-FROM maven:3.3-jdk-8-alpine
+FROM python:3
 RUN echo "turtle:x:%(uid_gid)s::/home/turtle:" >> /etc/passwd && mkdir /home/turtle
-COPY maven_wrap /home/turtle
+COPY stager /home/turtle
 RUN chown -R %(uid_gid)s /home/turtle
 USER turtle
-ENTRYPOINT ["/bin/bash", "/home/turtle/maven_wrap"]
+ENTRYPOINT ["python", "/home/turtle/stager", "/input", "/output"]
