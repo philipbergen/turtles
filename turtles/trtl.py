@@ -54,7 +54,9 @@ def main(opts):
     say("OPTS", opts)
 
     if settings['-p']:
-        settings.update(load_pipeline(settings['-p']).stage(settings))
+        for k, v in six.iteritems(load_pipeline(settings['-p']).stage(settings)):
+            if settings.get(k, None) is None:
+                settings[k] = v
     if not settings['-p'] and not settings['-i']:
         raise Exception("At least one of INPUT_DIR and PIPELINE must be set.")
     if not settings['-s']:
