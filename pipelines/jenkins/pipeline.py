@@ -9,29 +9,6 @@ def stage(settings):
     for share in shares:
         if not os.path.exists(os.path.expanduser(share)):
             sys.exit("For jenkins to work properly you need: " + share)
-    pope = Popen(["git", "remote", "get-url", "origin"], stdout=PIPE)
-    giturl, _ = pope.communicate()
-    giturl = giturl.strip()  # git@github.com:philipbergen/turtles.git
-    user, ghurl = giturl.split('@', 1)  # git, github.com:philipbergen/turtles.git
-    ghurl, ghrepo = ghurl.split(':', 1)  # github.com, philipbergen/turtles.git
-    org, name = ghrepo.rsplit('/', 1)  # philipbergen, turtles.git
-    name, _ = name.split(".", 1)  # turtles, _
-    template = {
-        "name": name,
-        "user": user,
-        "github_org": org,
-        "github_url": "https://%s/%s/%s" % (ghurl, org, name),
-        "git_url": giturl,
-    }
-    cfg_path = ".jenkins/jobs/%(name)s/config.xml" % template
-    if not os.path.exists(".jenkins") or not os.path.exists(cfg_path):
-        try:
-            os.makedirs(".jenkins/jobs/%(name)s" % template)
-        except OSError:
-            pass
-        with open(cfg_path, 'w') as fout:
-            cfg_xml = open(os.path.join(os.path.dirname(settings['-p']), "config.xml")).read()
-            fout.write(cfg_xml % template)
     image = "turtle-jenkins"
     pope = Popen(["docker", "images", "-q", image], stdout=PIPE)
     so, _ = pope.communicate()
@@ -48,6 +25,38 @@ def stage(settings):
             finally:
                 shutil.rmtree("turtles")
                 os.chdir(here)
+    if not os.path.exists(".jenkins/plugins"):
+        try:
+            os.makedirs(".jenkins")
+        except OSError:
+            pass
+        print("Will now launch Jenkins, please press run the wizard and shut down jenkins after")
+        cmd = ["docker", "run", "-p", "8080:8080", "--rm", "-v", os.path.abspath(".jenkins") + ":/var/jenkins_home:rw",
+               image]
+        call(cmd)
+    pope = Popen(["git", "remote", "get-url", "origin"], stdout=PIPE)
+    giturl, _ = pope.communicate()
+    giturl = giturl.strip()  # git@github.com:philipbergen/turtles.git
+    user, ghurl = giturl.split('@', 1)  # git, github.com:philipbergen/turtles.git
+    ghurl, ghrepo = ghurl.split(':', 1)  # github.com, philipbergen/turtles.git
+    org, name = ghrepo.rsplit('/', 1)  # philipbergen, turtles.git
+    name, _ = name.split(".", 1)  # turtles, _
+    template = {
+        "name": name,
+        "user": user,
+        "github_org": org,
+        "github_url": "https://%s/%s/%s" % (ghurl, org, name),
+        "git_url": giturl,
+    }
+    cfg_path = ".jenkins/jobs/%(name)s/config.xml" % template
+    if not os.path.exists(cfg_path):
+        try:
+            os.makedirs(".jenkins/jobs/%(name)s" % template)
+        except OSError:
+            pass
+        with open(cfg_path, 'w') as fout:
+            cfg_xml = open(os.path.join(os.path.dirname(settings['-p']), "config.xml")).read()
+            fout.write(cfg_xml % template)
     return {
         "-s": '/usr/local/bin/jenkins.sh',
         "-d": image,
