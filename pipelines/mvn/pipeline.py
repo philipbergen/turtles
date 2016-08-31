@@ -23,5 +23,5 @@ def stage(settings):
     return {
         "-s": "compile",
         "-d": image,
-        "-v": ["~/.m2:/root/.m2:rw"],
+        "-v": ["~/.m2:/root/.m2:rw", "target:/input/target:rw"],
     }

@@ -2,7 +2,7 @@
 set -eu
 cd /input
 same=false
-[ $(stat +inode /input) = $(stat +inode /output) ] && same=true
+[ $(stat -c %i /input) = $(stat -c %i /output) ] && same=true
 # Do the actual work of the stage
 mvn "$1"
 # Determine what the next stage should be
