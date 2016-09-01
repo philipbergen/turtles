@@ -1,24 +1,22 @@
 """
 Usage:
-    trtl [-p PIPELINE] [-i INPUT_DIR] [-o OUTPUT_DIR] [-d IMAGE] [-s STAGE] [-t TIMEOUT]
+    trtl [-p PIPELINE] [-w WORKSPACE_DIR] [-r RESULT_DIR] [-d IMAGE] [-s STAGE] [-t TIMEOUT]
          [-v VOLUME]... [--stop STOP] [--one] [--max-recurse MAX_RECURSE] [--verbose]
 
 Options:
     -p PIPELINE    Path to a turtle pipeline script.
 
-    -i INPUT_DIR   The directory to mount as /input inside the container. Typically the root
-                   of your source tree. If not
-                   specified os.path.dirname(<SETTINGS_JSON>) will be used.
+    -w WORKSPACE_DIR  The directory to mount as /workspace inside the container. Typically the root
+                      of your source tree. If not specified os.path.dirname(<PIPELINE>) is used.
 
-    -o OUTPUT_DIR  Target directory base for output from this stage. If not specified
-                   <INPUT_DIR> will be used. Only if <OUTPUT_DIR> is set, the combined
-                   <OUTPUT_DIR>/<STAGE> will be used.
+    -r RESULT_DIR  Target directory base for output from this stage. If not specified
+                   <WORKSPACE_DIR> is used.
 
-    -d IMAGE       Docker image URL. If not specified, the path from <INPUT_DIR>/result.json
-                   will be used.
+    -d IMAGE       Docker image URL. If not specified, the image from <PIPELINE> is used.
+                   Please note: ports exposed by an image are automatically detected and exposed.
 
     -s STAGE       Optionally specify the stage to run on the input. If not specified it will
-                   be derived from <INPUT_DIR>/settings.json
+                   be derived from <PIPELINE>.
 
     -t TIMEOUT     The timeout in seconds, only supported on python3.
 
@@ -49,9 +47,8 @@ def main(opts):
             print(*args)
 
     from . import load_pipeline, stage, StageFailed, MaxRecursion, em
-    o_outdir = opts['-o']
-    if o_outdir is not None:
-        o_outdir = os.path.abspath(o_outdir)
+    if opts['-r'] is not None:
+        opts['-r'] = os.path.abspath(opts['-r'])
     settings = {k: v for k, v in six.iteritems(opts) if not k.startswith('--')}
     opts['--max-recurse'] = int(opts['--max-recurse'])
     say("OPTS", opts)
@@ -62,29 +59,25 @@ def main(opts):
                 settings['-v'].extend(v)
             elif settings.get(k, None) is None:
                 settings[k] = v
-    if not settings['-p'] and not settings['-i']:
+    if not settings['-p'] and not settings['-w']:
         raise Exception("At least one of INPUT_DIR and PIPELINE must be set.")
     if not settings['-s']:
         raise Exception("STAGE must be set.")
     if not settings['-d']:
         raise Exception("IMAGE must be set.")
 
-    if not settings['-i']:
-        settings['-i'] = os.path.dirname(settings['-p'])
-    if not settings['-o']:
-        settings['-o'] = settings['-i']
-    settings['-i'] = os.path.abspath(os.path.expanduser(settings['-i']))
-    settings['-o'] = os.path.abspath(os.path.expanduser(settings['-o']))
+    if not settings['-w']:
+        settings['-w'] = os.path.dirname(settings['-p'])
+    if not settings['-r']:
+        settings['-r'] = settings['-w']
+    settings['-w'] = os.path.abspath(os.path.expanduser(settings['-w']))
+    settings['-r'] = os.path.abspath(os.path.expanduser(settings['-r']))
     say("SETTINGS", settings)
     del settings['-p']
 
     for _ in range(opts['--max-recurse']):
         try:
-            if o_outdir:
-                print(em("point_right"), "Using", o_outdir, "as base, appending", settings['-s'],
-                      "for OUTPUT_DIR")
-                settings['-o'] = os.path.join(o_outdir, settings['-s'])
-            res_path = settings['-o'] + '/result.json'
+            res_path = settings['-r'] + '/result.json'
             if os.path.exists(res_path):
                 os.unlink(res_path)
             say(_, "SETTINGS", settings)
@@ -97,9 +90,12 @@ def main(opts):
                 tmp = json.load(fin)
                 if tmp.get('-s', None) is None or tmp['-s'] == settings['-s']:
                     break
-                if '-o' in tmp:
-                    o_outdir = os.path.abspath(tmp['-o'])
+                if '-r' in tmp:
+                    tmp['-r'] = os.path.abspath(tmp['-r'])
                 settings.update(tmp)
+                if '-p' in settings:
+                    settings.update(load_pipeline(tmp['-p']).stage(settings))
+                    del settings['-p']
                 print(em('fast_forward'), "Next stage is", settings['-s'])
             if opts['--one'] or opts['--stop'] == settings['-s']:
                 print(em("no_entry"), "Not proceeding to next stage because --stop")

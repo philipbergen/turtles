@@ -26,5 +26,5 @@ def stage(settings):
     return {
         "-s": "validate",
         "-d": image,
-        "-v": ["~/.m2:/home/turtle/.m2:rw", "target:/input/target:rw"],
+        "-v": ["~/.m2:/home/turtle/.m2:rw", "target:/workspace/target:rw"],
     }

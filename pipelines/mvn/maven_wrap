@@ -1,8 +1,7 @@
 #!/bin/bash
 set -eu
-cd /input
 same=false
-[ $(stat -c %i /input) = $(stat -c %i /output) ] && same=true
+[ $(stat -c %i /workspace) = $(stat -c %i /result) ] && same=true
 # Do the actual work of the stage
 mvn "$1"
 # Determine what the next stage should be
@@ -15,7 +14,7 @@ compile)
     ;;
 test)
     next=package
-    [ $same != true ] && cp -r target/surefire-reports /output/
+    [ $same != true ] && cp -r target/surefire-reports /result/
     ;;
 package)
     next=install
@@ -30,4 +29,4 @@ install|deploy|clean)
 esac
 [ -z "$next" ] && exit 0
 # Generate the result.json
-echo "{\"-s\":\"$next\"}" > /output/result.json
+echo "{\"-s\":\"$next\"}" > /result/result.json

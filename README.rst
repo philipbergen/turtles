@@ -20,6 +20,7 @@ a script that implements the stages the image supports.
 
 Because *you* create the image and write the script you have full control over each part and each
 stage. The framework is very lightweight and will not be in the way.
+stage. The framework is very lightweight and will not be in the way.
 
 Setup
 =====
@@ -30,7 +31,7 @@ this:
 ::
 
     FROM maven:3.3-jdk-8-alpine
-    ENTRYPOINT ["/input/stage"]
+    ENTRYPOINT ["/workspace/stage"]
 
 Note: This ignores the problems with users and access rights in docker. See code examples in
 ``pipelines`` for complete examples.
@@ -48,7 +49,6 @@ Create the ``stage`` script in your source folder, simplified:
 
     #!/bin/bash
     set -eu
-    cd /input
     # Do the actual work of the stage
     mvn "$1"
     # Determine what the next stage should be
@@ -69,7 +69,7 @@ Create the ``stage`` script in your source folder, simplified:
     esac
     [ -z "$next" ] && exit 0
     # Generate the result.json
-    echo "{\"-s\":\"$next\"}" > /output/result.json
+    echo "{\"-s\":\"$next\"}" > /result/result.json
 
 
 Note: The return code of the stage is *really* important. If it's zero it means the stage completed
@@ -81,7 +81,7 @@ To test run:
 
 ::
 
-    trtl -d my-maven-project -i . -s compile
+    trtl -d my-maven-project -w. -s compile
 
 Once that completes, a result.json file is generated with next stage (``-s``) set to ``test`` (for
 details see the ``stage`` script above). ``trtl`` will pick that up and run again, and again, until
@@ -112,7 +112,7 @@ To specify parameters that can be set multiple times, such as ``-v``, use an arr
 ::
 
     {
-        "-v": ["target:/input/target:rw", "~/.m2/settings.xml:/home/turtle/.m2/settings.xml"]
+        "-v": ["target:/workspace/target:rw", "~/.m2/settings.xml:/home/turtle/.m2/settings.xml"]
     }
 
 
@@ -128,7 +128,7 @@ To avoid specifying all the parameters for launching a pipeline, write a pipelin
             "-d": "my-demo-image",
         }
 
-And invoke it with ``trtl -i. -p pipeline.py``.
+And invoke it with ``trtl -w. -p pipeline.py``.
 
 More advanced pipelines may create docker images and install keys and certificates before letting
 the stage begin. See ``pipelines/mvn/pipeline.py`` for example.

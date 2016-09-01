@@ -65,8 +65,7 @@ def stage(settings):
     return {
         "-s": '/usr/local/bin/jenkins.sh',
         "-d": image,
-        "-v": ["/var/run/docker.sock:/var/run/docker.sock", ".jenkins:/var/jenkins_home:rw",
-               ".:/cwd:rw"] + [
-                  '%s:%s:rw' % (share, share.replace('~', '/var/jenkins_home')) for
-                  share in shares],
+        "-v": ["/var/run/docker.sock:/var/run/docker.sock", ".jenkins:/var/jenkins_home:rw"] + [
+            '%s:%s:rw' % (share, share.replace('~', '/var/jenkins_home')) for
+            share in shares],
     }

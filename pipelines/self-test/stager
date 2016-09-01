@@ -41,7 +41,7 @@ def main(args):
         subprocess.check_call('pip install nose'.split())
         subprocess.check_call(('pip install -r ' + indir + '/requirements.txt').split())
         os.chdir(outdir + '')
-        subprocess.check_output('nosetests -w /output --doctest-tests'.split())
+        subprocess.check_output('nosetests -w ' + indir + ' --doctest-tests'.split())
         res = {'success': True}
     elif stage == 'loop':
         res = {'-s': 'loop-1'}

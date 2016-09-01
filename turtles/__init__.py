@@ -109,7 +109,7 @@ def stage(settings):
         xtra = [
             os.path.abspath(os.path.expanduser(v.split(":", 1)[0])) + ":" + v.split(":", 1)[1]
             for v in settings['-v']]
-        return [settings['-i'] + ':/input:ro', settings['-o'] + ':/output:rw'] + xtra
+        return [settings['-w'] + ':/workspace:rw', settings['-r'] + ':/result:rw'] + xtra
 
     def ports(image):
         try:
@@ -125,16 +125,16 @@ def stage(settings):
 
     print(em('cinema'), "Starting stage", settings['-s'])
     try:
-        os.makedirs(settings['-o'])
+        os.makedirs(settings['-r'])
     except OSError:
         pass  # Ignore if directory exists already
-    cmd = ["docker", 'run', '--rm']
+    cmd = ["docker", 'run', '--rm', '-w', '/workspace']
     for vol in volumes(settings):
         cmd += ["-v", vol]
     cmd += ports(settings['-d'])
     cmd += [settings['-d'], settings['-s']]
     print(em('whale'), cmd)
-    with open(os.path.join(settings['-o'], 'log.txt'), 'a') as fout:
+    with open(os.path.join(settings['-r'], 'log.txt'), 'a') as fout:
         fout.write('Log started: %d-%.2d-%.2d %.2d:%.2d:%.2d\n' % time.localtime()[:6])
         print(em('scroll'), "Output logged in", fout.name)
         returncode, stdo, stde = sp_run(cmd, stderr=STDOUT, stdout=fout, check=True,

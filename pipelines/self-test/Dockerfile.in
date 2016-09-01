@@ -4,4 +4,4 @@ COPY stager /home/turtle
 RUN pyvenv /home/turtle/py
 RUN chown -R %(uid_gid)s /home/turtle
 USER turtle
-ENTRYPOINT ["python", "/home/turtle/stager", "/input", "/output"]
+ENTRYPOINT ["python", "/home/turtle/stager", "/workspace", "/result"]
