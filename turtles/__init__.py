@@ -78,6 +78,8 @@ def docker_inspect(image):
     from subprocess import Popen, PIPE
     pope = Popen(["docker", "inspect", image], stdout=PIPE)
     so, _ = pope.communicate()
+    if not type(so) == str:
+        so = str(so, encoding='utf-8')
     if pope.returncode:
         raise ImageMissing(image)
     return json.loads(so)
@@ -94,7 +96,7 @@ def interpolate_file(input_path, output_path, kw={}, log=lambda x: None):
         log("Added uid_gid: " + kw['uid_gid'])
     with open(output_path, 'w') as fout, open(input_path) as fin:
         log("Extrapolating " + input_path + " to " + output_path)
-        fout.write(open(fin).read() % kw)
+        fout.write(fin.read() % kw)
 
 
 def stage(settings):
