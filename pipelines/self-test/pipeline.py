@@ -20,6 +20,6 @@ def stage(settings):
             finally:
                 os.chdir(here)
     return {
-        "-s": "test",
+        "-s": "build",
         "-d": image,
     }

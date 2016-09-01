@@ -24,6 +24,7 @@ import json
 
 def main(args):
     # print("STAGER:", args)
+    os.environ['PATH'] = '/home/turtle/py/bin:' + os.environ['PATH']
     indir, outdir, stage = args[:3]
     samedir = os.stat(indir).st_ino == os.stat(outdir).st_ino
     if stage == "build":
