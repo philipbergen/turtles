@@ -40,6 +40,8 @@ def stage(settings):
         call(cmd)
     pope = Popen(["git", "remote", "get-url", "origin"], stdout=PIPE)
     giturl, _ = pope.communicate()
+    if not type(giturl) == str:
+        giturl = str(giturl, encoding='utf-8')
     giturl = giturl.strip()  # git@github.com:philipbergen/turtles.git
     user, ghurl = giturl.split('@', 1)  # git, github.com:philipbergen/turtles.git
     ghurl, ghrepo = ghurl.split(':', 1)  # github.com, philipbergen/turtles.git
