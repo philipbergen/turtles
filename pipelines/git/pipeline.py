@@ -26,7 +26,6 @@ def stage(settings):
                 if call(["docker", "build", "-t", image, "."], stdout=fout):
                     sys.exit("Docker build failed.")
             finally:
-                shutil.rmtree(".ssh")
                 os.chdir(here)
     return {
         "-s": "setup",  # Ignored by repo_setup
