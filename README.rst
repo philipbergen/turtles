@@ -12,28 +12,33 @@ A docker based CI tool that works in the command line as well as inside CI servi
 What turtles is
 ===============
 
-One or more docker images support the tasks in your pipeline. For instance: sync, build, isolation test, integration
-test, deploy.
+One or more docker images support the tasks in your pipeline. For instance: sync, build, isolation
+test, integration test, deploy.
 
-The image's `entrypoint <https://docs.docker.com/engine/reference/builder/#/entrypoint>`_ points to a script that
-implements the stages the image supports.
+The image's `entrypoint <https://docs.docker.com/engine/reference/builder/#/entrypoint>`_ points to
+a script that implements the stages the image supports.
 
-Because *you* create the image and write the script you have full control over each part and each stage. The framework
-is very lightweight and will not be in the way.
+Because *you* create the image and write the script you have full control over each part and each
+stage. The framework is very lightweight and will not be in the way.
 
 Setup
 =====
 
-First create a docker image. A sample ``Dockerfile`` for a maven project could look something like this:
+First create a docker image. A sample ``Dockerfile`` for a maven project could look something like
+this:
 
 ::
 
     FROM maven:3.3-jdk-8-alpine
     ENTRYPOINT ["/input/stage"]
 
+Note: This ignores the problems with users and access rights in docker. See code examples in
+``pipelines`` for complete examples.
+
 Build the image and tag it usefully:
 
 ::
+
     docker build --tag my-maven-project .
 
 
@@ -43,6 +48,9 @@ Create the ``stage`` script in your source folder, simplified:
 
     #!/bin/bash
     set -eu
+    cd /input
+    # Do the actual work of the stage
+    mvn "$1"
     # Determine what the next stage should be
     case "$1" in
     compile)
@@ -59,35 +67,33 @@ Create the ``stage`` script in your source folder, simplified:
         exit 1
         ;;
     esac
-    cd /input
-    # Do the actual work of the stage
-    mvn "$1"
+    [ -z "$next" ] && exit 0
     # Generate the result.json
-    [ -n "$next" ] && echo "{\"-s\":\"$next\"}" > /output/result.json
+    echo "{\"-s\":\"$next\"}" > /output/result.json
 
 
-Note: The return code of the stage is *really* important. If it's zero it means the stage completed successfully and
-that everything is ready to move to the next stage. If there test failures should abort the pipeline, then test failures
-must be detected by the stage script and it should exit non-zero.
+Note: The return code of the stage is *really* important. If it's zero it means the stage completed
+successfully and that everything is ready to move to the next stage. If there test failures should
+abort the pipeline, then test failures must be detected by the stage script and it should exit
+non-zero.
 
 To test run:
 
 ::
 
-    trtl settings.json
+    trtl -d my-maven-project -i . -s compile
 
-Once that completes, a result.json file is generated with ``next_stage`` set to ``test`` (for details see the ``stage``
-script above). ``trtl`` will pick that up and run again, and again, until the ``result.json`` no longer has a
-``next_stage`` in it.
+Once that completes, a result.json file is generated with next stage (``-s``) set to ``test`` (for
+details see the ``stage`` script above). ``trtl`` will pick that up and run again, and again, until
+the ``result.json`` no longer has a ``-s`` in it.
 
-Each ``result.json`` has the power to change the docker image and that means that you have complete control over
-environment, entrypoint, and execution for each stage in the pipeline.
+Each ``result.json`` has the power to change the docker image and that means that you have complete
+control over environment, entrypoint, and execution for each stage in the pipeline.
 
-Settings
---------
+result.json
+-----------
 
-To not have to repeat all the ``trtl`` options, you can store them in ``settings.json``. The file is just a dictionary
-of the CLI parameters:
+The file is just a dictionary of the CLI parameters (see ``trtl -h`` for details):
 
 ::
 
@@ -97,16 +103,35 @@ of the CLI parameters:
         "-t": 120
     }
 
-Any of the parameters can be overridden in each stage's output ``result.json``. This allows the pipeline to switch the
-image before the next stage. It is also a required mechanism for specifying the next stage.
+Any of the parameters can be overridden in each stage's output ``result.json``. This allows the
+pipeline to switch the image before the next stage. It is also a required mechanism for specifying
+the next stage.
 
 To specify parameters that can be set multiple times, such as ``-v``, use an array:
 
 ::
 
     {
-        "-v": ["jars:/jars", "~/.m2/settings.xml:/root/.m2/settings.xml"]
+        "-v": ["target:/input/target:rw", "~/.m2/settings.xml:/home/turtle/.m2/settings.xml"]
     }
+
+
+Pipelines
+---------
+To avoid specifying all the parameters for launching a pipeline, write a pipeline script:
+
+::
+
+    def stage(settings):
+        return {
+            "-s": "build",
+            "-d": "my-demo-image",
+        }
+
+And invoke it with ``trtl -i. -p pipeline.py``.
+
+More advanced pipelines may create docker images and install keys and certificates before letting
+the stage begin. See ``pipelines/mvn/pipeline.py`` for example.
 
 
 MIT License
