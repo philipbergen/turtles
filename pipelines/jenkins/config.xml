@@ -40,13 +40,14 @@
   <builders>
     <hudson.tasks.Shell>
       <command>#!/bin/bash
-        set -eu
-        here=$(pwd)
-        cd /workspace
-        rm -f log.txt
-        trtl -w. -r "$here" -p /turtles/pipelines/mvn/pipeline.py --stop package
-        echo "****************************************************************************"
-        cat log.txt
+set -eu
+here=$(pwd)
+cd /workspace
+rm -f log.txt
+export TRTL_CWD="$(cat /var/jenkins_home/cwd)"
+trtl -w. -r "$here" -p /turtles/pipelines/mvn/pipeline.py --stop package
+echo "****************************************************************************"
+cat log.txt
       </command>
     </hudson.tasks.Shell>
   </builders>

@@ -99,15 +99,21 @@ def interpolate_file(input_path, output_path, kw={}, log=lambda x: None):
         fout.write(fin.read() % kw)
 
 
-def stage(settings):
+def stage(settings, volume_prefix=None):
     """ Runs a stage with docker.
         :param settings: The settings dict.
+        :param volume_prefix: The path to prefix relative paths with, if None, use CWD.
         :raise: StageFailed if the docker command exits non-zero.
     """
 
-    def volumes(settings):
+    def abspath(path, prefix):
+        if not path.startswith("/"):
+            path = os.path.join(prefix, path)
+        return os.path.abspath(path)
+
+    def volumes(settings, prefix):
         xtra = [
-            os.path.abspath(os.path.expanduser(v.split(":", 1)[0])) + ":" + v.split(":", 1)[1]
+            abspath(os.path.expanduser(v.split(":", 1)[0]), prefix) + ":" + v.split(":", 1)[1]
             for v in settings['-v']]
         return [settings['-w'] + ':/workspace:rw', settings['-r'] + ':/result:rw'] + xtra
 
@@ -123,13 +129,15 @@ def stage(settings):
         except (ImageMissing, IndexError, KeyError):
             return []
 
+    volume_prefix = volume_prefix or os.getcwd()
+
     print(em('cinema'), "Starting stage", settings['-s'])
     try:
         os.makedirs(settings['-r'])
     except OSError:
         pass  # Ignore if directory exists already
     cmd = ["docker", 'run', '--rm', '-w', '/workspace']
-    for vol in volumes(settings):
+    for vol in volumes(settings, volume_prefix):
         cmd += ["-v", vol]
     cmd += ports(settings['-d'])
     cmd += [settings['-d'], settings['-s']]

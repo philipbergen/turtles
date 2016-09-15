@@ -1,6 +1,7 @@
 def stage(settings):
-    """ Creates a git-client image, then returns a stage that will interact with the user to determine the
-        git URL. The URL is then cloned into CWD. """
+    """ Creates a git-client image, then returns a stage that will interact with the user to
+        determine the git URL. The URL is then cloned into CWD.
+    """
     import os
     import sys
     import shutil

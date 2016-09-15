@@ -62,6 +62,8 @@ def stage(settings):
             pass
         interpolate_file(os.path.join(os.path.dirname(settings['-p']), "config.xml"), cfg_path,
                          template)
+    with open(".jenkins/cwd", 'w') as fout:
+        fout.write(os.getcwd())
     return {
         "-s": '/usr/local/bin/jenkins.sh',
         "-d": image,

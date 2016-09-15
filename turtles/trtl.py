@@ -2,12 +2,13 @@
 Usage:
     trtl [-p PIPELINE] [-w WORKSPACE_DIR] [-r RESULT_DIR] [-d IMAGE] [-s STAGE] [-t TIMEOUT]
          [-v VOLUME]... [--stop STOP] [--one] [--max-recurse MAX_RECURSE] [--verbose]
+         [--home-dir=HOME_DIR] [--volume-prefix=VOL_PREFIX]
 
 Options:
     -p PIPELINE    Path to a turtle pipeline script.
 
     -w WORKSPACE_DIR  The directory to mount as /workspace inside the container. Typically the root
-                      of your source tree. If not specified os.path.dirname(<PIPELINE>) is used.
+                      of your source tree. If not specified CWD will be used.
 
     -r RESULT_DIR  Target directory base for output from this stage. If not specified
                    <WORKSPACE_DIR> is used.
@@ -26,9 +27,14 @@ Options:
 
     --stop STOP    Run until the next stage is <STOP>, then stop.
 
-    --max-recurse MAX_RECURSE  The maximum stages to allow trtl to recurse through [default: 100]
-
     --verbose      Verbose
+
+    --max-recurse MAX_RECURSE   The maximum stages to allow trtl to recurse through [default: 100]
+
+    --volume-prefix VOL_PREFIX  Use this to prefix relative volume mounts, not CWD. Can also be set
+                                using env var TRTL_CWD.
+
+    --home-dir HOME_DIR         Sets that path to use as "home" in paths [default: ~]
 
 """
 from __future__ import absolute_import, print_function
@@ -41,6 +47,10 @@ import six
 def main(opts):
     """ Acts on the options derived from the usage described in __doc__.
     """
+    def abspath(path, prefix):
+        if not path.startswith("/"):
+            path = os.path.join(prefix, path)
+        return os.path.abspath(path)
 
     def say(*args):
         if opts['--verbose']:
@@ -51,6 +61,8 @@ def main(opts):
         opts['-r'] = os.path.abspath(opts['-r'])
     settings = {k: v for k, v in six.iteritems(opts) if not k.startswith('--')}
     opts['--max-recurse'] = int(opts['--max-recurse'])
+    if not opts['--volume-prefix']:
+        opts['--volume-prefix'] = os.environ.get('TRTL_CWD', os.getcwd())
     say("OPTS", opts)
 
     if settings['-p']:
@@ -67,11 +79,11 @@ def main(opts):
         raise Exception("IMAGE must be set.")
 
     if not settings['-w']:
-        settings['-w'] = os.path.dirname(settings['-p'])
+        settings['-w'] = os.getcwd()
     if not settings['-r']:
         settings['-r'] = settings['-w']
-    settings['-w'] = os.path.abspath(os.path.expanduser(settings['-w']))
-    settings['-r'] = os.path.abspath(os.path.expanduser(settings['-r']))
+    settings['-w'] = abspath(os.path.expanduser(settings['-w']), opts['--volume-prefix'])
+    settings['-r'] = abspath(os.path.expanduser(settings['-r']), opts['--volume-prefix'])
     say("SETTINGS", settings)
     del settings['-p']
 
@@ -91,7 +103,7 @@ def main(opts):
                 if tmp.get('-s', None) is None or tmp['-s'] == settings['-s']:
                     break
                 if '-r' in tmp:
-                    tmp['-r'] = os.path.abspath(tmp['-r'])
+                    tmp['-r'] = abspath(tmp['-r'], opts['--volume-prefix'])
                 settings.update(tmp)
                 if '-p' in settings:
                     settings.update(load_pipeline(tmp['-p']).stage(settings))
